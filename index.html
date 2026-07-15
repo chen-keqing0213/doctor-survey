@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医生文书工作痛点调查</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --primary-light: #DBEAFE;
+    --bg: #F1F5F9;
+    --card: #FFFFFF;
+    --text: #1E293B;
+    --text-secondary: #64748B;
+    --border: #E2E8F0;
+    --danger: #EF4444;
+    --success: #10B981;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding-bottom: 60px;
+  }
+  .header {
+    background: linear-gradient(135deg, #1E40AF, #3B82F6);
+    color: white;
+    padding: 32px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 12px rgba(30,64,175,0.2);
+  }
+  .header h1 { font-size: 22px; margin-bottom: 6px; }
+  .header p { font-size: 14px; opacity: 0.85; }
+  .progress-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    background: #60A5FA;
+    transition: width 0.3s;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: none;
+  }
+  .section.active { display: block; }
+  .section-num {
+    display: inline-block;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .section h2 {
+    font-size: 19px;
+    margin-bottom: 6px;
+  }
+  .section .subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+
+  /* Question styles */
+  .q-block {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .q-block:last-child { border-bottom: none; margin-bottom: 0; }
+  .q-label {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .q-label .required { color: var(--danger); margin-left: 2px; }
+
+  /* Radio / Checkbox */
+  .option-list { display: flex; flex-direction: column; gap: 8px; }
+  .option-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+  }
+  .option-item:hover { border-color: #93C5FD; background: #F8FAFC; }
+  .option-item.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .option-item input { display: none; }
+  .option-item .dot {
+    width: 18px; height: 18px;
+    border: 2px solid #CBD5E1;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .option-item.selected .dot {
+    border-color: var(--primary);
+    background: var(--primary);
+  }
+  .option-item.selected .dot::after {
+    content: '';
+    width: 6px; height: 6px;
+    background: white;
+    border-radius: 50%;
+  }
+  .option-item .dot-checkbox {
+    border-radius: 4px !important;
+  }
+  .option-item.selected .dot-checkbox::after {
+    content: '✓';
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    width: auto; height: auto;
+    background: none;
+    border-radius: 0;
+  }
+
+  /* Yes/No */
+  .yn-group {
+    display: flex;
+    gap: 12px;
+  }
+  .yn-btn {
+    flex: 1;
+    padding: 16px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    text-align: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: white;
+  }
+  .yn-btn:hover { border-color: #93C5FD; }
+  .yn-btn.selected-yes {
+    border-color: var(--success);
+    background: #ECFDF5;
+    color: #065F46;
+    font-weight: 600;
+  }
+  .yn-btn.selected-no {
+    border-color: var(--danger);
+    background: #FEF2F2;
+    color: #991B1B;
+    font-weight: 600;
+  }
+
+  /* Text input */
+  .text-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.15s;
+  }
+  .text-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  }
+  .text-input.single-line { min-height: auto; }
+  .char-count { text-align: right; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Navigation */
+  .nav-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .btn {
+    padding: 16px 24px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-prev {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text-secondary);
+  }
+  .btn-next {
+    flex: 2;
+    background: var(--primary);
+    color: white;
+  }
+  .btn-submit {
+    flex: 2;
+    background: linear-gradient(135deg, #2563EB, #3B82F6);
+    color: white;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Result page */
+  .result-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    display: none;
+  }
+  .result-card.show { display: block; }
+  .result-icon { font-size: 64px; margin-bottom: 16px; }
+  .result-card h2 { font-size: 22px; margin-bottom: 8px; }
+  .result-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .result-summary {
+    text-align: left;
+    background: #F8FAFC;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.8;
+    margin-bottom: 20px;
+  }
+  .tips-box {
+    text-align: left;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .tips-box strong { color: #D97706; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏥 医生文书工作痛点调查</h1>
+  <p>5分钟 · 匿名 · 为AI辅助工具提供方向</p>
+  <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+</div>
+
+<div class="container">
+
+  <!-- ============ SECTION 1: 基本信息 ============ -->
+  <div class="section active" id="sec1">
+    <span class="section-num">第 1/5 部分</span>
+    <h2>📋 基本信息</h2>
+    <p class="subtitle">帮助了解您的日常工作背景</p>
+
+    <div class="q-block">
+      <label class="q-label">1. 您所在的科室是？<span class="required">*</span></label>
+      <div class="option-list" data-name="q1" data-type="radio">
+        <label class="option-item"><input type="radio" name="q1" value="内科（心内/呼吸/消化/神内/肾内等）"><span class="dot"></span>内科（心内/呼吸/消化/神内/肾内等）</label>
+        <label class="option-item"><input type="radio" name="q1" value="外科（普外/骨科/泌尿/神外/胸外等）"><span class="dot"></span>外科（普外/骨科/泌尿/神外/胸外等）</label>
+        <label class="option-item"><input type="radio" name="q1" value="妇产科"><span class="dot"></span>妇产科</label>
+        <label class="option-item"><input type="radio" name="q1" value="儿科"><span class="dot"></span>儿科</label>
+        <label class="option-item"><input type="radio" name="q1" value="急诊科"><span class="dot"></span>急诊科</label>
+        <label class="option-item"><input type="radio" name="q1" value="ICU/重症"><span class="dot"></span>ICU / 重症医学科</label>
+        <label class="option-item"><input type="radio" name="q1" value="五官科（眼/耳鼻喉/口腔）"><span class="dot"></span>五官科（眼/耳鼻喉/口腔）</label>
+        <label class="option-item"><input type="radio" name="q1" value="其他科室"><span class="dot"></span>其他科室</label>
+      </div>
+      <input type="text" class="text-input single-line" id="q1-other" placeholder="请输入科室名称" style="display:none; margin-top:8px;">
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">2. 您从医多少年了？<span class="required">*</span></label>
+      <div class="option-list" data-name="q2" data-type="radio">
+        <label class="option-item"><input type="radio" name="q2" value="规培/实习阶段"><span class="dot"></span>规培 / 实习阶段</label>
+        <label class="option-item"><input type="radio" name="q2" value="1-5年"><span class="dot"></span>1-5 年</label>
+        <label class="option-item"><input type="radio" name="q2" value="6-10年"><span class="dot"></span>6-10 年</label>
+        <label class="option-item"><input type="radio" name="q2" value="11-20年"><span class="dot"></span>11-20 年</label>
+        <label class="option-item"><input type="radio" name="q2" value="20年以上"><span class="dot"></span>20 年以上</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">3. 您所在医院的等级是？<span class="required">*</span></label>
+      <div class="option-list" data-name="q3" data-type="radio">
+        <label class="option-item"><input type="radio" name="q3" value="三级甲等"><span class="dot"></span>三级甲等</label>
+        <label class="option-item"><input type="radio" name="q3" value="三级乙等/其他三级"><span class="dot"></span>三级乙等 / 其他三级</label>
+        <label class="option-item"><input type="radio" name="q3" value="二级甲等"><span class="dot"></span>二级甲等</label>
+        <label class="option-item"><input type="radio" name="q3" value="二级乙等/其他二级"><span class="dot"></span>二级乙等 / 其他二级</label>
+        <label class="option-item"><input type="radio" name="q3" value="一级/社区卫生中心/乡镇卫生院"><span class="dot"></span>一级 / 社区卫生中心 / 乡镇卫生院</label>
+        <label class="option-item"><input type="radio" name="q3" value="民营/诊所"><span class="dot"></span>民营医院 / 诊所</label>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <div style="flex:1"></div>
+      <button class="btn btn-next" onclick="nextSection(1)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2: 文书痛点 ============ -->
+  <div class="section" id="sec2">
+    <span class="section-num">第 2/5 部分</span>
+    <h2>📝 文书工作量与痛点</h2>
+    <p class="subtitle">了解您每天在文书上花多少时间</p>
+
+    <div class="q-block">
+      <label class="q-label">4. 您平均每天花多少时间写病历文书？<span class="required">*</span></label>
+      <div class="option-list" data-name="q4" data-type="radio">
+        <label class="option-item"><input type="radio" name="q4" value="1小时以内"><span class="dot"></span>1 小时以内</label>
+        <label class="option-item"><input type="radio" name="q4" value="1-2小时"><span class="dot"></span>1-2 小时</label>
+        <label class="option-item"><input type="radio" name="q4" value="2-3小时"><span class="dot"></span>2-3 小时</label>
+        <label class="option-item"><input type="radio" name="q4" value="3-4小时"><span class="dot"></span>3-4 小时</label>
+        <label class="option-item"><input type="radio" name="q4" value="4小时以上"><span class="dot"></span>4 小时以上</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">5. 以下哪种文书最让您头疼？（可多选）<span class="required">*</span></label>
+      <div class="option-list" data-name="q5" data-type="checkbox">
+        <label class="option-item"><input type="checkbox" name="q5" value="入院记录"><span class="dot dot-checkbox"></span>入院记录 —— 字数多，病史要写全</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="首次病程记录"><span class="dot dot-checkbox"></span>首次病程记录 —— 8小时内必须完成，时间最紧</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="日常病程记录"><span class="dot dot-checkbox"></span>日常病程记录 —— 重复性高，每天写都差不多</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="主治/主任查房记录"><span class="dot dot-checkbox"></span>主治/主任查房记录 —— 分析要到位，含糊就扣分</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="手术记录"><span class="dot dot-checkbox"></span>手术记录 —— 术后24h内，步骤细节要准确</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="出院小结"><span class="dot dot-checkbox"></span>出院小结 —— 总结全面、医保审核关键</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="交班/转科记录"><span class="dot dot-checkbox"></span>交班记录 / 转科记录</label>
+        <label class="option-item"><input type="checkbox" name="q5" value="抢救记录"><span class="dot dot-checkbox"></span>抢救记录 —— 紧急情况，事后6h内补记</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">6. 写文书时最让您烦躁的是什么？（可多选）<span class="required">*</span></label>
+      <div class="option-list" data-name="q6" data-type="checkbox">
+        <label class="option-item"><input type="checkbox" name="q6" value="重复劳动"><span class="dot dot-checkbox"></span>大量重复复制粘贴，明明差不多但要来回改</label>
+        <label class="option-item"><input type="checkbox" name="q6" value="措辞组织"><span class="dot dot-checkbox"></span>临床发现都知道，但要写成规范书面语就很累</label>
+        <label class="option-item"><input type="checkbox" name="q6" value="打字太慢"><span class="dot dot-checkbox"></span>打字慢 / EMR系统卡顿 / 输入法不好用</label>
+        <label class="option-item"><input type="checkbox" name="q6" value="时限压力"><span class="dot dot-checkbox"></span>时限太紧（8h/24h），忙的时候根本没空写</label>
+        <label class="option-item"><input type="checkbox" name="q6" value="质控焦虑"><span class="dot dot-checkbox"></span>写完怕被质控扣分 / 医保拒付，总要多检查几遍</label>
+        <label class="option-item"><input type="checkbox" name="q6" value="夜班负担"><span class="dot dot-checkbox"></span>夜班/值班时还要补白天的文书</label>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-prev" onclick="prevSection(2)">← 上一步</button>
+      <button class="btn btn-next" onclick="nextSection(2)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3: 工作流程与技术环境 ============ -->
+  <div class="section" id="sec3">
+    <span class="section-num">第 3/5 部分</span>
+    <h2>💻 工作流程与技术环境</h2>
+    <p class="subtitle">了解您现在的工具和限制</p>
+
+    <div class="q-block">
+      <label class="q-label">7. 上班时能方便地用手机辅助工作吗？<span class="required">*</span></label>
+      <div class="yn-group" data-name="q7">
+        <div class="yn-btn" data-value="yes" onclick="selectYN(this, 'q7')">✓ 可以</div>
+        <div class="yn-btn" data-value="no" onclick="selectYN(this, 'q7')">✗ 不方便 / 有顾虑</div>
+      </div>
+      <input type="hidden" name="q7" value="">
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">8. 你们医院的电子病历系统（EMR），能不能从外部复制粘贴文字进去？<span class="required">*</span></label>
+      <div class="yn-group" data-name="q8">
+        <div class="yn-btn" data-value="yes" onclick="selectYN(this, 'q8')">✓ 可以自由粘贴</div>
+        <div class="yn-btn" data-value="partial" onclick="selectYN(this, 'q8')">⚠ 可以但有限制</div>
+        <div class="yn-btn" data-value="no" onclick="selectYN(this, 'q8')">✗ 完全不行，锁定</div>
+      </div>
+      <input type="hidden" name="q8" value="">
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">9. 医院对医生使用 AI 工具（如 ChatGPT/DeepSeek/豆包等）有明确限制吗？<span class="required">*</span></label>
+      <div class="yn-group" data-name="q9">
+        <div class="yn-btn" data-value="yes" onclick="selectYN(this, 'q9')">✓ 明确禁止</div>
+        <div class="yn-btn" data-value="no" onclick="selectYN(this, 'q9')">✗ 没有限制或不清楚</div>
+      </div>
+      <input type="hidden" name="q9" value="">
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">10. 您目前用过哪些 AI 工具辅助工作？（可多选）</label>
+      <div class="option-list" data-name="q10" data-type="checkbox">
+        <label class="option-item"><input type="checkbox" name="q10" value="DeepSeek"><span class="dot dot-checkbox"></span>DeepSeek</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="豆包/字节系"><span class="dot dot-checkbox"></span>豆包 / 字节系 AI</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="Kimi"><span class="dot dot-checkbox"></span>Kimi</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="文心一言"><span class="dot dot-checkbox"></span>文心一言</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="通义千问"><span class="dot dot-checkbox"></span>通义千问</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="ChatGPT"><span class="dot dot-checkbox"></span>ChatGPT</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="病历侠"><span class="dot dot-checkbox"></span>病历侠（AI 写病历小程序）</label>
+        <label class="option-item"><input type="checkbox" name="q10" value="都没用过"><span class="dot dot-checkbox"></span>都没用过</label>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-prev" onclick="prevSection(3)">← 上一步</button>
+      <button class="btn btn-next" onclick="nextSection(3)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4: 付费意愿 ============ -->
+  <div class="section" id="sec4">
+    <span class="section-num">第 4/5 部分</span>
+    <h2>💰 AI 工具接受度与付费意愿</h2>
+    <p class="subtitle">了解您对 AI 辅助工具的态度</p>
+
+    <div class="q-block">
+      <label class="q-label">11. 如果有一个 AI 工具能帮您快速生成病历草稿（您只需修改确认），您愿意尝试吗？<span class="required">*</span></label>
+      <div class="yn-group" data-name="q11">
+        <div class="yn-btn" data-value="yes" onclick="selectYN(this, 'q11')">✓ 愿意，很有兴趣</div>
+        <div class="yn-btn" data-value="maybe" onclick="selectYN(this, 'q11')">⚠ 观望，看别人用得怎么样</div>
+        <div class="yn-btn" data-value="no" onclick="selectYN(this, 'q11')">✗ 不太信任 AI</div>
+      </div>
+      <input type="hidden" name="q11" value="">
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">12. 如果这个工具每天帮您省 1-2 小时写文书时间，您个人愿意每月花多少钱？<span class="required">*</span></label>
+      <div class="option-list" data-name="q12" data-type="radio">
+        <label class="option-item"><input type="radio" name="q12" value="不愿意付费"><span class="dot"></span>不愿意为这类工具付费</label>
+        <label class="option-item"><input type="radio" name="q12" value="9-19元/月"><span class="dot"></span>9-19 元/月（一顿午饭钱）</label>
+        <label class="option-item"><input type="radio" name="q12" value="20-39元/月"><span class="dot"></span>20-39 元/月（一杯咖啡钱）</label>
+        <label class="option-item"><input type="radio" name="q12" value="40-69元/月"><span class="dot"></span>40-69 元/月（一顿聚餐钱）</label>
+        <label class="option-item"><input type="radio" name="q12" value="70-100元/月"><span class="dot"></span>70-100 元/月（省了时间就值）</label>
+        <label class="option-item"><input type="radio" name="q12" value="一次性买断"><span class="dot"></span>更倾向一次性买断（如 ¥99-199）</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">13. 您觉得医院有可能为医生采购这类工具并报销费用吗？<span class="required">*</span></label>
+      <div class="yn-group" data-name="q13">
+        <div class="yn-btn" data-value="yes" onclick="selectYN(this, 'q13')">✓ 有可能，医院有意愿</div>
+        <div class="yn-btn" data-value="unlikely" onclick="selectYN(this, 'q13')">⚠ 不太可能，流程太复杂</div>
+        <div class="yn-btn" data-value="no" onclick="selectYN(this, 'q13')">✗ 完全不可能</div>
+      </div>
+      <input type="hidden" name="q13" value="">
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-prev" onclick="prevSection(4)">← 上一步</button>
+      <button class="btn btn-next" onclick="nextSection(4)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5: 功能需求 + 开放问题 ============ -->
+  <div class="section" id="sec5">
+    <span class="section-num">第 5/5 部分</span>
+    <h2>🎯 功能需求与建议</h2>
+    <p class="subtitle">最后几个问题，帮助我们设计真正好用的工具</p>
+
+    <div class="q-block">
+      <label class="q-label">14. 在 AI 病历辅助工具中，哪些功能对您最重要？（请选最重要的 3 个）<span class="required">*</span></label>
+      <div class="option-list" data-name="q14" data-type="checkbox" data-max="3">
+        <label class="option-item"><input type="checkbox" name="q14" value="语音转病历"><span class="dot dot-checkbox"></span>🎤 语音录入 —— 我口述关键信息，AI 生成病历</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="模板化输入"><span class="dot dot-checkbox"></span>📋 模板化输入 —— 按字段填写，AI 展开为完整文书</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="拍照OCR"><span class="dot dot-checkbox"></span>📷 拍照 OCR —— 拍纸质报告/手写记录，AI 提取关键信息</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="时限提醒"><span class="dot dot-checkbox"></span>⏰ 时限提醒 —— 入院8h/术后24h 等倒计时，防止超时</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="质控检查"><span class="dot dot-checkbox"></span>🔍 初步质控 —— 检查病历缺项、逻辑矛盾、规范性问题</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="历史复用"><span class="dot dot-checkbox"></span>🔄 历史复用 —— 同一病人的往期记录一键引用</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="多模板切换"><span class="dot dot-checkbox"></span>📑 多模板支持 —— 入院/病程/手术/出院等一键切换</label>
+        <label class="option-item"><input type="checkbox" name="q14" value="离线使用"><span class="dot dot-checkbox"></span>📵 离线模式 —— 不依赖网络，数据不出手机</label>
+      </div>
+      <p class="char-count" style="color:#EF4444; display:none;" id="q14-warning">最多选 3 项</p>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">15. 使用 AI 写病历，您最大的顾虑是什么？（可多选）<span class="required">*</span></label>
+      <div class="option-list" data-name="q15" data-type="checkbox">
+        <label class="option-item"><input type="checkbox" name="q15" value="患者隐私泄露"><span class="dot dot-checkbox"></span>患者隐私泄露风险</label>
+        <label class="option-item"><input type="checkbox" name="q15" value="内容不专业"><span class="dot dot-checkbox"></span>AI 生成内容不够专业，被上级/质控挑刺</label>
+        <label class="option-item"><input type="checkbox" name="q15" value="漏关键信息"><span class="dot dot-checkbox"></span>担心 AI 遗漏关键诊断信息</label>
+        <label class="option-item"><input type="checkbox" name="q15" value="医院不允许"><span class="dot dot-checkbox"></span>医院/科室明令禁止使用 AI</label>
+        <label class="option-item"><input type="checkbox" name="q15" value="依赖后退化"><span class="dot dot-checkbox"></span>长期用 AI 会让自己的病历书写能力退化</label>
+        <label class="option-item"><input type="checkbox" name="q15" value="说不清责任"><span class="dot dot-checkbox"></span>AI 辅助生成的责任归属问题</label>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">16. 除了病历文书，您在日常工作中还有什么事情觉得「要是 AI 能帮我做就好了」？（简答）</label>
+      <textarea class="text-input" id="q16" placeholder="比如：写论文、做PPT、查文献、开医嘱、和患者解释病情...任何让您觉得重复、耗时的事"></textarea>
+      <p class="char-count"><span id="q16-count">0</span>/300</p>
+    </div>
+
+    <div class="q-block">
+      <label class="q-label">17. 还有什么想对我们说的？（选填）</label>
+      <textarea class="text-input" id="q17" placeholder="任何吐槽、需求、建议、或想让我们知道的事..."></textarea>
+      <p class="char-count"><span id="q17-count">0</span>/500</p>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-prev" onclick="prevSection(5)">← 上一步</button>
+      <button class="btn btn-submit" onclick="submitSurvey()">✅ 提交问卷</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULT PAGE ============ -->
+  <div class="result-card" id="resultPage">
+    <div class="result-icon">✅</div>
+    <h2>提交成功！感谢您的参与 🎉</h2>
+    <p>您的反馈将直接帮助我们设计更贴合医生需求的 AI 工具</p>
+    <div class="result-summary" id="resultSummary"></div>
+    <div class="tips-box">
+      <strong>💡 提示</strong><br>
+      请将本页面截图发给调查发起人，方便我们汇总分析。您也可以点击下方按钮分享给其他医生同事。
+    </div>
+    <button class="btn btn-next" onclick="shareSurvey()" style="width:100%">📤 分享给同事</button>
+    <button class="btn btn-prev" onclick="resetSurvey()" style="width:100%; margin-top:12px;">🔄 再填一份（帮同事代填）</button>
+  </div>
+
+</div>
+
+<script>
+// ========== Navigation ==========
+const totalSections = 5;
+
+function showSection(n) {
+  for (let i = 1; i <= totalSections; i++) {
+    document.getElementById('sec' + i).classList.remove('active');
+  }
+  document.getElementById('sec' + n).classList.add('active');
+  document.getElementById('progressFill').style.width = ((n-1) / (totalSections-1) * 100) + '%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextSection(n) {
+  if (!validateSection(n)) return;
+  showSection(n + 1);
+}
+
+function prevSection(n) {
+  showSection(n - 1);
+}
+
+function selectYN(el, qName) {
+  el.parentElement.querySelectorAll('.yn-btn').forEach(b => {
+    b.classList.remove('selected-yes', 'selected-no');
+  });
+  if (el.dataset.value === 'yes') el.classList.add('selected-yes');
+  else if (el.dataset.value === 'no') el.classList.add('selected-no');
+  else if (el.dataset.value === 'maybe' || el.dataset.value === 'partial' || el.dataset.value === 'unlikely') {
+    el.classList.add('selected-yes');
+  }
+  document.querySelector(`input[name="${qName}"]`).value = el.dataset.value;
+}
+
+// ========== Radio/Checkbox selection ==========
+document.addEventListener('click', function(e) {
+  const item = e.target.closest('.option-item');
+  if (!item) return;
+
+  const list = item.parentElement;
+  const type = list.dataset.type;
+  const max = parseInt(list.dataset.max) || Infinity;
+  const input = item.querySelector('input');
+
+  if (type === 'radio') {
+    list.querySelectorAll('.option-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    input.checked = true;
+
+    // Show "other" text input for q1
+    if (input.name === 'q1' && input.value === '其他科室') {
+      document.getElementById('q1-other').style.display = 'block';
+    } else if (input.name === 'q1') {
+      document.getElementById('q1-other').style.display = 'none';
+    }
+  }
+
+  if (type === 'checkbox') {
+    const checked = list.querySelectorAll('.option-item.selected').length;
+    if (item.classList.contains('selected')) {
+      item.classList.remove('selected');
+      input.checked = false;
+      document.getElementById(list.dataset.name + '-warning')?.style?.setProperty?.('display', 'none');
+    } else {
+      if (checked >= max) {
+        const warn = document.getElementById(list.dataset.name + '-warning');
+        if (warn) { warn.style.display = 'block'; setTimeout(() => warn.style.display = 'none', 2000); }
+        return;
+      }
+      item.classList.add('selected');
+      input.checked = true;
+    }
+  }
+});
+
+// ========== Validation ==========
+function validateSection(n) {
+  const sec = document.getElementById('sec' + n);
+  const requiredRadios = new Set();
+  const requiredCheckboxes = new Set();
+  const requiredYN = new Set();
+
+  sec.querySelectorAll('.q-label .required').forEach(r => {
+    const qBlock = r.closest('.q-block');
+    const radioList = qBlock.querySelector('.option-list[data-type="radio"]');
+    const checkboxList = qBlock.querySelector('.option-list[data-type="checkbox"]');
+    const ynGroup = qBlock.querySelector('.yn-group');
+
+    if (radioList) requiredRadios.add(radioList.dataset.name);
+    if (checkboxList) requiredCheckboxes.add(checkboxList.dataset.name);
+    if (ynGroup) requiredYN.add(ynGroup.dataset.name);
+  });
+
+  for (const name of requiredRadios) {
+    const checked = sec.querySelector(`input[name="${name}"]:checked`);
+    if (!checked) {
+      alert('请完成所有带 * 的必答题');
+      return false;
+    }
+  }
+
+  for (const name of requiredCheckboxes) {
+    const checked = sec.querySelectorAll(`input[name="${name}"]:checked`);
+    if (checked.length === 0) {
+      alert('请完成所有带 * 的必答题');
+      return false;
+    }
+  }
+
+  for (const name of requiredYN) {
+    const hidden = sec.querySelector(`input[name="${name}"]`);
+    if (!hidden || !hidden.value) {
+      alert('请完成所有带 * 的必答题');
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// ========== Character counter ==========
+document.getElementById('q16').addEventListener('input', function() {
+  document.getElementById('q16-count').textContent = this.value.length;
+});
+document.getElementById('q17').addEventListener('input', function() {
+  document.getElementById('q17-count').textContent = this.value.length;
+});
+
+// ========== Submit ==========
+function submitSurvey() {
+  if (!validateSection(5)) return;
+
+  // Collect all answers
+  const results = {};
+  for (let i = 1; i <= 17; i++) {
+    const qName = 'q' + i;
+    if (i === 16 || i === 17) {
+      results[qName] = document.getElementById(qName).value || '(未填写)';
+      continue;
+    }
+
+    const radios = document.querySelectorAll(`input[name="${qName}"]:checked`);
+    if (radios.length > 0) {
+      results[qName] = Array.from(radios).map(r => r.value).join('；');
+    } else {
+      const yn = document.querySelector(`input[name="${qName}"]`);
+      if (yn && yn.value) {
+        results[qName] = yn.value === 'yes' ? '是' : yn.value === 'no' ? '否' : yn.value;
+      } else {
+        results[qName] = '(未填写)';
+      }
+    }
+  }
+
+  // Special handling for q1 "其他"
+  if (results.q1 === '其他科室') {
+    const otherVal = document.getElementById('q1-other').value.trim();
+    if (otherVal) results.q1 = otherVal;
+  }
+
+  // Show result summary
+  let summary = '';
+  summary += `科室：${results.q1}\n`;
+  summary += `从医年限：${results.q2}\n`;
+  summary += `医院等级：${results.q3}\n`;
+  summary += `每日文书时间：${results.q4}\n`;
+  summary += `最头疼文书：${results.q5}\n`;
+  summary += `烦躁原因：${results.q6}\n`;
+  summary += `能用手机：${results.q7} | 能粘贴：${results.q8} | AI限制：${results.q9}\n`;
+  summary += `用过AI：${results.q10}\n`;
+  summary += `尝试意愿：${results.q11}\n`;
+  summary += `付费意愿：${results.q12}\n`;
+  summary += `医院报销：${results.q13}\n`;
+  summary += `最重要功能：${results.q14}\n`;
+  summary += `最大顾虑：${results.q15}\n`;
+  summary += `其他想AI做的：${results.q16}\n`;
+  summary += `补充：${results.q17}`;
+
+  document.getElementById('resultSummary').innerHTML = summary.replace(/\n/g, '<br>');
+
+  // Hide sections, show result
+  for (let i = 1; i <= totalSections; i++) {
+    document.getElementById('sec' + i).classList.remove('active');
+  }
+  document.getElementById('resultPage').classList.add('show');
+  document.getElementById('progressFill').style.width = '100%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Save to localStorage
+  const allResults = JSON.parse(localStorage.getItem('docSurveyResults') || '[]');
+  allResults.push({ timestamp: new Date().toISOString(), ...results });
+  localStorage.setItem('docSurveyResults', JSON.stringify(allResults));
+}
+
+function resetSurvey() {
+  location.reload();
+}
+
+function shareSurvey() {
+  if (navigator.share) {
+    navigator.share({
+      title: '医生文书工作痛点调查',
+      text: '5分钟匿名问卷，帮助打造更好用的医生AI工具 🏥',
+    }).catch(() => {});
+  } else {
+    alert('请截图本页面发给调查发起人，或复制链接分享给其他医生同事 📤');
+  }
+}
+</script>
+</body>
+</html>
