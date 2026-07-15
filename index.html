@@ -110,6 +110,10 @@
     cursor: pointer;
     transition: all 0.15s;
     font-size: 14px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .option-item:hover { border-color: #93C5FD; background: #F8FAFC; }
   .option-item.selected {
@@ -576,10 +580,7 @@ function selectYN(el, qName) {
 }
 
 // ========== Radio/Checkbox selection ==========
-document.addEventListener('click', function(e) {
-  const item = e.target.closest('.option-item');
-  if (!item) return;
-
+function handleOptionSelect(item) {
   const list = item.parentElement;
   const type = list.dataset.type;
   const max = parseInt(list.dataset.max) || Infinity;
@@ -589,8 +590,6 @@ document.addEventListener('click', function(e) {
     list.querySelectorAll('.option-item').forEach(i => i.classList.remove('selected'));
     item.classList.add('selected');
     input.checked = true;
-
-    // Show "other" text input for q1
     if (input.name === 'q1' && input.value === '其他科室') {
       document.getElementById('q1-other').style.display = 'block';
     } else if (input.name === 'q1') {
@@ -603,17 +602,34 @@ document.addEventListener('click', function(e) {
     if (item.classList.contains('selected')) {
       item.classList.remove('selected');
       input.checked = false;
-      document.getElementById(list.dataset.name + '-warning')?.style?.setProperty?.('display', 'none');
+      const warnEl = document.getElementById(list.dataset.name + '-warning');
+      if (warnEl) warnEl.style.display = 'none';
     } else {
       if (checked >= max) {
-        const warn = document.getElementById(list.dataset.name + '-warning');
-        if (warn) { warn.style.display = 'block'; setTimeout(() => warn.style.display = 'none', 2000); }
+        const warnEl = document.getElementById(list.dataset.name + '-warning');
+        if (warnEl) { warnEl.style.display = 'block'; setTimeout(function(){ warnEl.style.display = 'none'; }, 2000); }
         return;
       }
       item.classList.add('selected');
       input.checked = true;
     }
   }
+}
+
+// 同时绑定 click 和 touchend，适配手机和电脑
+document.addEventListener('click', function(e) {
+  var item = e.target.closest('.option-item');
+  if (!item) return;
+  e.preventDefault();
+  handleOptionSelect(item);
+});
+
+document.addEventListener('touchend', function(e) {
+  var item = e.target.closest('.option-item');
+  if (!item) return;
+  // 阻止 touchend 后再次触发 click
+  e.preventDefault();
+  handleOptionSelect(item);
 });
 
 // ========== Validation ==========
